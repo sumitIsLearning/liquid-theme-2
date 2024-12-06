@@ -1,18 +1,70 @@
-{% paginate collection.products by 2 %}
-  <h1>{{ collection.title }}</h1>
-  {% for product in collection.products %}
-    <div>
-      <a href="{{ product.url | within: collection }}">{{ product.title }}</a>
-      {{ product.price | money }}
-      {% unless product.available %}<br><strong>sold out</strong>{% endunless %}
-      <a href="{{ product.url | within: collection }}">
-        <img src="{{ product.featured_image.src | image_url: 'large' }}" alt="{{ product.featured_image.alt | escape }}" width="{{product.featured_image.width}}" height="{{product.featured_image.height}}">
-      </a>
-    </div>
-  {% else %}
-    <p>no matches</p>
-  {% endfor %}
-  {% if paginate.pages > 1 %}
-    {{ paginate | default_pagination }}
-  {% endif %}
+{% paginate collection.products by 5 %}
+  {% assign price_sorted_in_stock_products = collection.products | where: 'available' | sort: 'price' | uniq |  reverse %}
+
+{% comment %} {% if vendor_filter %}
+  {%  assign filtered_product = price_sorted_in_stock_products |  where: 'vendor', vendor_filter %} 
+  {% elsif price_filter %}
+    {%  assign filtered_product = price_sorted_in_stock_products |   where:'price', price_filter |  reverse %} 
+    {% else %}
+    {%  assign filtered_product = price_sorted_in_stock_products %}
+{% endif %} {% endcomment %}
+
+{% comment %} what each filters does 
+ -sort: string (eg. sort: 'price') (sort the array in order by specified attribute)
+ - where: string string (eg. where: 'vendor','Nike' or where: 'available', true) (where filters out the array based on specific criteria)
+ - uniq (uniq removes all the duplicate elements from an array)
+ - reverse (as the name suggest it reverses the order of an array)
+{% endcomment %}
+
+<!-- product filter -->
+<div class="product-filter">
+  <!-- Vendor Filter -->
+  <label for="vendor-filter">Filter by Vendor:</label>
+  <select id="vendor-filter" class="filter-dropdown">
+    <option value="">All Vendors</option>
+    {% for vendor in shop.vendors %}
+      <option value="{{ vendor }}">{{ vendor }}</option>
+    {% endfor %}
+  </select>
+
+  <!-- Price Range Filter -->
+  <label for="price-filter">Filter by Price:</label>
+  <select id="price-filter" class="filter-dropdown">
+    <option value="">All Prices</option>
+    <option value="0-50">Under RS.50</option>
+    <option value="50-100">Rs.50 - Rs.100</option>
+    <option value="100-200">Rs.100 - Rs.200</option>
+    <option value="200-">Above Rs.200</option>
+  </select>
+</div>
+
+<!-- product list -->
+ {% if price_sorted_in_stock_products.size > 0 %}
+
+  <div id="product-grid">
+    {% for product in price_sorted_in_stock_products %}
+      <div class="product-item" data-vendor="{{ product.vendor }}" data-price="{{ product.price }}">
+        <h2>{{ product.title }}</h2>
+        <p>Price: {{ product.price | money }}</p>
+        <button>
+          <a href="{{product.url}}" style="text-decoration: none; color:black">view Product</a> 
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+
+  <p>No Product available in this collection.</p>
+
+{% endif %}
+
+<div class="page-navigation-buttons" style="margin-top:10px;">
+  <button>
+    <a href="{{paginate.previous.url}}" style="text-decoration: none; color:black">{{paginate.previous.title}}</a> 
+  </button>
+  <button>
+   <a href="{{paginate.next.url}}" style="text-decoration: none; color:black">{{paginate.next.title}}</a> 
+  </button>
+</div>
 {% endpaginate %}
